@@ -13,7 +13,7 @@ setup(
     long_description_content_type='text/markdown',  # Type of the long description
     
     packages=find_packages(),  # Automatically find packages in the directory
-    install_requires=[ 'python-dotenv' , 'requests' , 'aiohttp', 'tldextract', 'pyyaml'],
+    install_requires=[ 'python-dotenv' , 'beautifulsoup4' , 'lxml', 'pyyaml'],
     classifiers=[
         'Development Status :: 3 - Alpha',  # Development status
         'Intended Audience :: Developers',
