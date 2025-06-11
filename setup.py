@@ -5,7 +5,7 @@ import os
 
 setup(
     name='domreducer',  # Package name
-    version='0.0.1',  # Version of your package
+    version='0.0.3',  # Version of your package
     author='Enes Kuzucu',  # Your name
     
     description='package to reduce DOM data (html or JS) without losing information so it can fit into LLMs. ',  # Short description
@@ -13,7 +13,7 @@ setup(
     long_description_content_type='text/markdown',  # Type of the long description
     
     packages=find_packages(),  # Automatically find packages in the directory
-    install_requires=[ 'python-dotenv' , 'beautifulsoup4' , 'lxml', 'pyyaml'],
+    install_requires=[ 'python-dotenv' , 'beautifulsoup4' , 'lxml', 'pyyaml', 'tiktoken'],
     classifiers=[
         'Development Status :: 3 - Alpha',  # Development status
         'Intended Audience :: Developers',

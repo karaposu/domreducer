@@ -1,10 +1,9 @@
+# reducer.py
+
 from __future__ import annotations
 import re
 import hashlib
-from dataclasses import dataclass, field
-from typing import (
-    List, Callable, Optional, Dict
-)
+from typing import List, Callable, Optional, Dict
 
 from bs4 import BeautifulSoup, Comment, Tag, NavigableString
 import tiktoken
@@ -186,7 +185,6 @@ class HtmlReducer:
             for r in data:
                 r.extend([""] * (maxc - len(r)))
             md = []
-            # header
             hdr = data[0]
             sep = ["---"] * maxc
             md.append("| " + " | ".join(hdr) + " |")
@@ -353,14 +351,12 @@ class HtmlReducer:
         if not body:
             return False
         children = [c for c in body.find_all(recursive=False) if isinstance(c, Tag)]
-        if (
+        return (
             len(children) == 2
             and children[0].name == "noscript"
             and children[1].name == "div"
             and children[1].get("id") == "main"
-        ):
-            return True
-        return False
+        )
 
     def reduce(
         self,
@@ -374,11 +370,11 @@ class HtmlReducer:
           right after parsing and return success=False, js_method_needed=True.
         """
         steps = order or self._DEFAULT_PIPE
-        # ensure parsing first
         if steps[0] != "parse_the_full_dom_into_a_dom_tree":
             steps = ["parse_the_full_dom_into_a_dom_tree", *steps]
 
         self.reducement_details = {}
+
         try:
             # parse
             getattr(self, steps[0])()
@@ -395,7 +391,7 @@ class HtmlReducer:
                     reducement_details=self.reducement_details,
                 )
 
-            # apply each step and record deltas
+            # run each mutator and record deltas
             for name in steps[1:]:
                 before = self.to_html()
                 b_chars = len(before)
@@ -437,8 +433,11 @@ class HtmlReducer:
 
 # --- quick demo (remove when importing as a library) -----------------------
 if __name__ == "__main__":
-    import sys, textwrap, pathlib
-    sample_html = pathlib.Path(__file__).with_suffix(".html").read_text() if len(sys.argv) > 1 else """
+    import sys, pathlib
+    sample_html = (
+        pathlib.Path(__file__).with_suffix(".html").read_text()
+        if len(sys.argv) > 1
+        else """
         <html><head><style>.x{display:none}</style></head>
         <body>
             <div><div><span id='t' style="display:none">invisible</span>
@@ -447,25 +446,12 @@ if __name__ == "__main__":
                 <nav><ul><li>home</li><li>about</li></ul></nav>
             </div></div>
         </body></html>
-    """
-    cleaner = HtmlReducer(sample_html).reduce()
-    print(textwrap.shorten(cleaner.to_html(), width=120, placeholder=" …"))
+        """
+    )
+    reducer = HtmlReducer(sample_html)
+    op = reducer.reduce()
 
-
-
-#parse_the_full_dom_into_a_dom_tree
-# strip_out_non_structural_nodes
-#strip_out_non_visual_nodes
-#simplify_attributes
-# collapse_deeply_nested_container_with_one_child
-# prune_repetitive_and_boilerplate_navigation_items
-# reduce_large_inline_SVGs_or_images_to_lightweight_placeholders
-# preserve_tables_as_markdown
-# preserve_deflists_as_markdown
-# preserve_lists_as_markdown
-# preserve_figures_as_markdown
-# preserve_css_tables_as_markdown
-# is_probably_js_shell
-# strip_tailwind_utility_classes
-# drop_row_ids_inside_large_tables
-# minify_whitespace
+    if op.success and op.reduced_data is not None:
+        print(op.reduced_data)
+    else:
+        print("Reduction failed or JS shell detected:", op)

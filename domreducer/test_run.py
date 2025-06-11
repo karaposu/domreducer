@@ -1,68 +1,65 @@
+# test_run.py
+# to run: python -m domreducer.test_run
+
 from .reducer import HtmlReducer
-import sys, textwrap, pathlib
+import sys, pathlib
 
-
+# a custom pipeline that includes all the new stages
 _EXTRA_PIPE = [
     "parse_the_full_dom_into_a_dom_tree",
     "strip_out_non_structural_nodes",
     "strip_out_non_visual_nodes",
     "simplify_attributes",
-    "strip_tailwind_utility_classes",          # ← NEW
+    "strip_tailwind_utility_classes",
     "collapse_deeply_nested_container_with_one_child",
     "prune_repetitive_and_boilerplate_navigation_items",
-    "preserve_tables_as_markdown",             # ← NEW  (or top-N variant)
-    "drop_row_ids_inside_large_tables",        # ← NEW
+    "preserve_tables_as_markdown",
+    "drop_row_ids_inside_large_tables",
     "reduce_large_inline_SVGs_or_images_to_lightweight_placeholders",
-    "minify_whitespace",                       # ← optional
+    "minify_whitespace",
 ]
 
-# sample_html = pathlib.Path(__file__).with_suffix(".html").read_text() if len(sys.argv) > 1 else """
-#     <html><head><style>.x{display:none}</style></head>
-#     <body>
-#         <div><div><span id='t' style="display:none">invisible</span>
-#             <svg width="800" height="600"><circle cx="50" cy="50" r="40"/></svg>
-#             <nav><ul><li>home</li><li>about</li></ul></nav>
-#             <nav><ul><li>home</li><li>about</li></ul></nav>
-#         </div></div>
-#     </body></html>
-# """
+def main():
+    # choose one of your test files here
+    html_file = 'domreducer/testdoms/html/budgety-ai.html'
+    sample_html = pathlib.Path(html_file).read_text()
+    
+    # create the reducer and run the pipeline
+    reducer = HtmlReducer(sample_html)
+    op = reducer.reduce(_EXTRA_PIPE)
 
+    # always show the raw input
+    print("\n=== RAW HTML ===\n")
+    print(op.raw_data)
 
-html_file = 'domreducer/testdoms/html/budgety-ai.html'  
-# html_file = 'domreducer/testdoms/html/allaboutcircuits-article.html'  
-# html_file = 'domreducer/testdoms/html/eetech.html'
-# html_file = 'domreducer/testdoms/html/worldometers-world-population.html'
+    # handle abort / error
+    if not op.success:
+        if op.js_method_needed:
+            print("\n⚠️  Detected a JS-only shell; you’ll need to fetch with a browser-enabled reducer.")
+        else:
+            print("\n❌ Reduction error:", op.error)
+        sys.exit(1)
 
-sample_html = pathlib.Path(html_file).read_text()  
+    # otherwise, show the reduced output
+    reduced = op.reduced_data or ""
+    print("\n=== REDUCED HTML ===\n")
+    print(reduced)
 
+    # summary stats
+    print("\n=== SUMMARY ===")
+    print(f" original chars: {op.total_char}")
+    print(f" original tokens: {op.total_token}")
+    reduced_chars = len(reduced)
+    reduced_tokens = len(reducer.encoding.encode(reduced))
+    print(f" reduced chars : {reduced_chars}")
+    print(f" reduced tokens: {reduced_tokens}")
 
-reducer = HtmlReducer(sample_html).reduce(_EXTRA_PIPE)
+    # per-step deltas
+    print("\n=== PER-STEP Δchars / Δtokens ===")
+    for step, stats in op.reducement_details.items():
+        dc = stats["delta_chars"]
+        dt = stats["delta_tokens"]
+        print(f" • {step:40s}  Δchars={dc:5d}, Δtokens={dt:5d}")
 
-reduced_version=reducer.to_html()
-
-print("here is reduced version: ")
-print(reduced_version)
-print(" reduced version finihed ")
-print("total_char_len: ", reducer.total_char_len, "total toke: ",reducer.raw_token_size )
-print("reduced len: ", reducer.reduced_char_len, "reduced token size:", reducer.reduced_token_size)
-
-
-
-for step, stats in reducer.reducement_details.items():
-        print(f" • {step:40s}  Δchars={stats['char_delta']:5d}, Δtokens={stats['token_delta']:5d}")
-
-
-
-
-
-print( "  ")
-print( "here is raw version: ")
-print( "  ")
-
-print( reducer.raw_html)
-print( "  ")
-
-print( "here is reduced version: ")
-print( "  ")
-
-# print( cleaner.to_html())
+if __name__ == "__main__":
+    main()
