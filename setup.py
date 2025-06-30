@@ -5,7 +5,7 @@ import os
 
 setup(
     name='domreducer',  # Package name
-    version='0.0.3',  # Version of your package
+    version='0.0.4',  # Version of your package
     author='Enes Kuzucu',  # Your name
     
     description='package to reduce DOM data (html or JS) without losing information so it can fit into LLMs. ',  # Short description

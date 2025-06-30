@@ -1,5 +1,7 @@
 # reducer.py
 
+# to run python -m domreducer.reducer
+
 from __future__ import annotations
 import re
 import hashlib
@@ -378,7 +380,7 @@ class HtmlReducer:
         try:
             # parse
             getattr(self, steps[0])()
-
+            
             # abort if JS shell
             if abort_on_js_shell and self.is_probably_js_shell():
                 return ReduceOperation(
@@ -408,15 +410,36 @@ class HtmlReducer:
                     "delta_tokens": a_tokens - b_tokens,
                 }
 
+            reduced_html = self.to_html()
+            reduced_chars = len(reduced_html)
+            reduced_tokens = len(self.encoding.encode(reduced_html))
+            pct = (
+                (self.raw_token_size - reduced_tokens) / self.raw_token_size * 100
+                if self.raw_token_size else 0.0
+            )   
+            
             return ReduceOperation(
                 success=True,
+                js_method_needed=False,
                 total_char=self.total_char_len,
                 total_token=self.raw_token_size,
+                reduced_data=reduced_html,
+                reduced_total_char=reduced_chars,
+                reduced_total_token=reduced_tokens,
+                token_reducement_percentage=round(pct, 3),
                 raw_data=self.raw_html,
-                reduced_data=self.to_html(),
-                js_method_needed=False,
                 reducement_details=self.reducement_details,
             )
+
+            # return ReduceOperation(
+            #     success=True,
+            #     total_char=self.total_char_len,
+            #     total_token=self.raw_token_size,
+            #     raw_data=self.raw_html,
+            #     reduced_data=self.to_html(),
+            #     js_method_needed=False,
+            #     reducement_details=self.reducement_details,
+            # )
 
         except Exception as e:
             return ReduceOperation(
@@ -453,5 +476,7 @@ if __name__ == "__main__":
 
     if op.success and op.reduced_data is not None:
         print(op.reduced_data)
+        print("")
+        print("token_reducement_percentage: ", op.token_reducement_percentage)
     else:
         print("Reduction failed or JS shell detected:", op)
